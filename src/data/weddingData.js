@@ -1,6 +1,6 @@
 // ========= SAB KUCH YAHIN SE BADLO (English + Urdu) =========
 const weddingData = {
-  brideName: "Meharma Khan",
+  brideName: "Mehrmah Khan",
   groomName: "Sayyed Saud",
  groomFamily: "Groom's Family",     
   hero: {
@@ -36,7 +36,7 @@ weddingDateDisplay: "28 DECEMBER 2026",
   // credit: { enabled: true, name: "Mehran Malik", portfolioUrl: "https://mehran-malik-portfolio.vercel.app", whatsappUrl: "https://wa.me/919301197150?text=Hi%20Mehran!" },
 
   // // ============ URDU ============
-    // ============ URDU ============
+  
   ur: {
     brideName: "مہرمہ خان",
     groomName: "سید سعود",
