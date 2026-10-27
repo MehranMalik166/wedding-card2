@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "../context/LanguageContext";
 import { buildWhatsAppMessageLink, buildEmailLink } from "./inviteLink";
@@ -26,6 +26,52 @@ export function Invite() {
 const STAR = (() => { const p = []; for (let i = 0; i < 16; i++) { const a = (Math.PI * i) / 8 - Math.PI / 2, r = i % 2 ? 38 : 50; p.push(`${(50 + r * Math.cos(a)).toFixed(1)}% ${(50 + r * Math.sin(a)).toFixed(1)}%`); } return `polygon(${p.join(",")})`; })();
 const S = 300;
 
+// fading animation 
+const SYMS = ["♥", "✦", "❀", "✿", "★", "❁"];
+const COLS = ["#f6dfa0", "#d4af6a", "#ff9fb2", "#fff8e6", "#8fe3c8"];
+
+function Burst() {
+  const items = useMemo(
+    () =>
+      Array.from({ length: 28 }, (_, i) => {
+        const a = (Math.PI * 2 * i) / 28 + Math.random() * 0.4;
+        const r = 90 + Math.random() * 80;
+        return {
+          s: SYMS[i % SYMS.length],
+          c: COLS[i % COLS.length],
+          x: Math.cos(a) * r,
+          y: Math.sin(a) * r - 30,
+          size: 12 + Math.random() * 14,
+          rot: (Math.random() - 0.5) * 360,
+          d: Math.random() * 0.4,
+        };
+      }),
+    []
+  );
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center">
+      {items.map((p, i) => (
+        <motion.span
+          key={i}
+          className="absolute"
+          style={{ color: p.c, fontSize: p.size, textShadow: "0 0 8px rgba(246,223,160,.7)" }}
+          initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
+          animate={{
+            x: [0, p.x, p.x * 1.1],
+            y: [0, p.y, p.y - 110],
+            opacity: [0, 1, 0],
+            scale: [0, 1.2, 0.8],
+            rotate: [0, p.rot],
+          }}
+          transition={{ duration: 2.6, delay: p.d, ease: "easeOut" }}
+        >
+          {p.s}
+        </motion.span>
+      ))}
+    </div>
+  );
+}
+
 export function Scratch() {
   const { data, t } = useLanguage();
   const cv = useRef(null);
@@ -40,13 +86,22 @@ export function Scratch() {
     g.addColorStop(0, "#f6dfa0"); g.addColorStop(0.5, "#b98a3e"); g.addColorStop(1, "#7a5a22");
     x.fillStyle = g; x.fillRect(0, 0, S, S);
     for (let i = 0; i < 240; i++) { x.fillStyle = `rgba(255,255,255,${Math.random() * 0.5})`; x.fillRect(Math.random() * S, Math.random() * S, 1.5, 1.5); }
-    let down = false;
+       let down = false, last = null;
     const pos = (e) => { const r = c.getBoundingClientRect(), p = e.touches ? e.touches[0] : e; return [p.clientX - r.left, p.clientY - r.top]; };
-    const dig = (e) => { const [px, py] = pos(e); x.globalCompositeOperation = "destination-out"; x.beginPath(); x.arc(px, py, 22, 0, 7); x.fill(); };
-    const check = () => { const d = x.getImageData(0, 0, c.width, c.height).data; let n = 0, m = 0; for (let i = 3; i < d.length; i += 24) { m++; if (d[i] < 40) n++; } if (n / m > 0.25) setDone(true); };
-    const st = (e) => { down = true; setHint(false); document.documentElement.style.overflow = "hidden"; dig(e); };
+    const dig = (e) => {
+      const [px, py] = pos(e);
+      x.globalCompositeOperation = "destination-out";
+      x.fillStyle = "#000"; x.strokeStyle = "#000";
+      x.lineCap = "round"; x.lineJoin = "round"; x.lineWidth = 50;
+      x.beginPath();
+      if (last) { x.moveTo(last[0], last[1]); x.lineTo(px, py); x.stroke(); }
+      x.arc(px, py, 20, 0, 7); x.fill();
+      last = [px, py];
+    };
+    const check = () => { const d = x.getImageData(0, 0, c.width, c.height).data; let n = 0, m = 0; for (let i = 3; i < d.length; i += 24) { m++; if (d[i] < 40) n++; } if (n / m > 0.50) setDone(true); };
+    const st = (e) => { down = true; last = null; setHint(false); document.documentElement.style.overflow = "hidden"; dig(e); };
     const mv = (e) => { if (!down) return; e.cancelable && e.preventDefault(); dig(e); check(); };
-    const en = () => { down = false; document.documentElement.style.overflow = ""; check(); };
+    const en = () => { down = false; last = null; document.documentElement.style.overflow = ""; check(); };
     c.addEventListener("mousedown", st); c.addEventListener("mousemove", mv); window.addEventListener("mouseup", en);
     c.addEventListener("touchstart", st, { passive: false }); c.addEventListener("touchmove", mv, { passive: false }); c.addEventListener("touchend", en);
     return () => { window.removeEventListener("mouseup", en); document.documentElement.style.overflow = ""; };
@@ -56,15 +111,21 @@ export function Scratch() {
       <Head dark label={t.secretLabel} title={t.secretHeading} />
       <p className="mb-6 text-center font-script text-4xl text-[#d4af6a]">{t.scratchTitle}</p>
       <div dir="ltr" className="relative mx-auto select-none" style={{ width: S, height: S, touchAction: "none" }}>
-        <div className="absolute inset-0 grid place-items-center text-center" style={{ clipPath: STAR, background: "radial-gradient(circle,#1b7a63,#0b3329)", boxShadow: "0 0 50px #d4af6a" }}>
+       <motion.div
+  animate={done ? { scale: [1, 1.08, 1] } : {}}
+  transition={{ duration: 0.9 }}
+  className="absolute inset-0 grid place-items-center text-center"
+  style={{ clipPath: STAR, background: "radial-gradient(circle at 50% 45%,#2fb58f,#14806a 55%,#0b4a3b)", boxShadow: "0 0 50px #d4af6a" }}
+>
           <AnimatePresence>{done && (
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="px-12">
               <p className="text-[10px] tracking-[.3em] text-[#f3dfaa]">{t.saveTheDate}</p>
               <p className="font-display text-xl text-white">{data.weddingDateDisplay}</p>
               <p className="font-script text-2xl text-[#f3dfaa]">{t.ourWeddingDay}</p>
             </motion.div>)}</AnimatePresence>
-        </div>
-        {!done && <canvas ref={cv} className="absolute inset-0 cursor-pointer" style={{ width: S, height: S, clipPath: STAR }} />}
+        </motion.div>
+      {!done && <canvas ref={cv} className="absolute inset-0 cursor-pointer" style={{ width: S, height: S, clipPath: STAR }} />}
+      {done && <Burst />}
         {!done && hint && <span className="pointer-events-none absolute inset-0 grid place-items-center text-[12px] font-semibold tracking-[.2em] text-[#3a2808]/80">{t.scratchOverlay}</span>}
       </div>
     </Sec>
@@ -187,7 +248,11 @@ export function Foot() {
     <footer className="bg-[#071a16] px-6 py-14 text-center text-[#f3dfaa]">
       <p className="text-[11px] tracking-[.35em]">{t.withLove}</p>
       <p className="mt-1 font-serif text-sm italic opacity-70">{data.brideFamily}</p>
-      <p className="mt-4 font-script text-3xl text-[#d4af6a]">{data.brideName} ♡ {data.groomName}</p>
+     <p className="mt-4 flex flex-col items-center justify-center gap-1 font-script text-3xl text-[#d4af6a] sm:flex-row sm:gap-3">
+  <span>{data.groomName}</span>
+  <span className="text-[#b98a3e] drop-shadow-[0_0_8px_rgba(246,223,160,.55)]">♡</span>
+  <span>{data.brideName}</span>
+</p>
       <p className="font-display text-lg">{data.weddingDateDisplay}</p>
       <p className="mt-4 font-serif text-xs opacity-60">{t.thanks}</p>
       {/* {c?.enabled && (<div className="mt-8 flex flex-col items-center gap-3">
