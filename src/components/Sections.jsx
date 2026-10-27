@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { useLanguage } from "../context/LanguageContext";
 import { buildWhatsAppMessageLink, buildEmailLink } from "./inviteLink";
+import weddingData from "../data/weddingData";
 
 const R = ({ children, className = "", d = 0 }) => (
   <motion.div initial={{ opacity: 0, y: 36 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.8, delay: d }} className={className}>{children}</motion.div>
@@ -19,8 +20,34 @@ const Sec = ({ dark, children }) => (
 const Row = ({ k, v }) => (<div className="flex flex-col items-center"><span className="text-[10px] tracking-[.3em] text-[#d4af6a]">{k}</span><span className="font-serif text-lg">{v}</span></div>);
 
 export function Invite() {
-  const { data, t } = useLanguage();
-  return (<Sec><Head label={t.invitation} title={data.invitation.heading} /><R className="mx-auto max-w-md text-center font-serif text-xl leading-relaxed opacity-80">{data.invitation.message}</R></Sec>);
+  const { data, t, isUr } = useLanguage();
+  const ref = useRef(null);
+  const [noImg, setNoImg] = useState(false);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], ["-7%", "7%"]);
+  const msg = data.invitation.short || data.invitation.message;
+  return (
+    <Sec>
+      <Head label={t.invitation} title={data.invitation.heading} />
+      <R className="mx-auto w-full max-w-[520px]">
+        <div ref={ref} className="relative">
+          {/* */}
+       <div className="absolute -inset-2 rounded-[1.25rem] border border-[#d4af6a]/70" />
+          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl shadow-[0_20px_50px_-20px_rgba(12,43,37,.55)]">
+            <motion.div style={{ y }} className="absolute inset-x-0 -top-[8%] h-[116%]">
+              {noImg ? (
+                <div className="h-full w-full" style={{ background: "radial-gradient(circle at 50% 30%,rgba(212,175,106,.35),transparent 55%),linear-gradient(#145a4a,#071a16)" }} />
+              ) : (
+                <img src="/invite-arch.jpg" alt="" onError={() => setNoImg(true)} className="h-full w-full object-cover" />
+              )}
+            </motion.div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#071a16]/35 to-transparent" />
+          </div>
+        </div>
+        <p className={`mx-auto mt-8 max-w-sm text-center font-serif text-[#10211d]/80 ${isUr ? "text-base leading-[2.1]" : "text-lg italic leading-relaxed"}`}>{msg}</p>
+      </R>
+    </Sec>
+  );
 }
 
 const STAR = (() => { const p = []; for (let i = 0; i < 16; i++) { const a = (Math.PI * i) / 8 - Math.PI / 2, r = i % 2 ? 38 : 50; p.push(`${(50 + r * Math.cos(a)).toFixed(1)}% ${(50 + r * Math.sin(a)).toFixed(1)}%`); } return `polygon(${p.join(",")})`; })();
@@ -73,7 +100,7 @@ function Burst() {
 }
 
 export function Scratch() {
-  const { data, t } = useLanguage();
+  const { data, t, isUr } = useLanguage();
   const cv = useRef(null);
   const [done, setDone] = useState(false);
   const [hint, setHint] = useState(true);
@@ -118,11 +145,11 @@ export function Scratch() {
   style={{ clipPath: STAR, background: "radial-gradient(circle at 50% 45%,#2fb58f,#14806a 55%,#0b4a3b)", boxShadow: "0 0 50px #d4af6a" }}
 >
           <AnimatePresence>{done && (
-            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="px-12">
-              <p className="text-[10px] tracking-[.3em] text-[#f3dfaa]">{t.saveTheDate}</p>
-              <p className="font-display text-xl text-white">{data.weddingDateDisplay}</p>
-              <p className="font-script text-2xl text-[#f3dfaa]">{t.ourWeddingDay}</p>
-            </motion.div>)}</AnimatePresence>
+  <motion.div dir={isUr ? "rtl" : "ltr"} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="flex max-w-[190px] flex-col items-center gap-1">
+    <p className={`text-[#f3dfaa] ${isUr ? "text-[12px] leading-[2]" : "text-[10px] tracking-[.3em]"}`}>{t.saveTheDate}</p>
+    <p className={`font-display text-white ${isUr ? "text-lg leading-[2]" : "text-xl"}`}>{data.weddingDateDisplay}</p>
+    <p className={`font-script text-[#f3dfaa] ${isUr ? "text-base leading-[2]" : "text-2xl"}`}>{t.ourWeddingDay}</p>
+  </motion.div>)}</AnimatePresence>
         </motion.div>
       {!done && <canvas ref={cv} className="absolute inset-0 cursor-pointer" style={{ width: S, height: S, clipPath: STAR }} />}
       {done && <Burst />}
@@ -133,16 +160,17 @@ export function Scratch() {
 }
 
 export function Count() {
-  const { data, t } = useLanguage();
+  const { data, t, isUr } = useLanguage();
   const calc = () => { const d = Math.max(new Date(data.weddingDateISO) - Date.now(), 0); return [Math.floor(d / 864e5), Math.floor(d / 36e5) % 24, Math.floor(d / 6e4) % 60, Math.floor(d / 1e3) % 60]; };
   const [v, setV] = useState(calc);
   useEffect(() => { const i = setInterval(() => setV(calc()), 1000); return () => clearInterval(i); }, []);
   const L = [t.days, t.hours, t.minutes, t.seconds];
   return (
     <Sec><Head label={t.countdownLabel} title={t.countdownHeading} />
-      <div dir="ltr" className="flex justify-center gap-2.5">{v.map((n, i) => (
-        <div key={i} className="flex h-28 w-[72px] flex-col items-center justify-end rounded-t-full border border-[#d4af6a] bg-[#0c2b25] pb-3 text-[#fff8e6]">
-          <b className="font-display text-2xl">{String(n).padStart(2, "0")}</b><i className="text-[10px] not-italic text-[#d4af6a]">{L[i]}</i>
+      <div dir="ltr" className="mx-auto flex max-w-sm justify-center gap-2.5">{v.map((n, i) => (
+        <div key={i} className="flex min-h-[6rem] w-[72px] flex-col items-center justify-end gap-1 rounded-t-full border border-[#d4af6a] bg-[#0c2b25] px-1 pb-4 text-[#fff8e6]">
+          <b className="text-2xl leading-none" style={{ fontFamily: '"Playfair Display", serif' }}>{String(n).padStart(2, "0")}</b>
+          <span className={`block text-center text-[#d4af6a] ${isUr ? "text-[12px] leading-[2.2]" : "text-[10px] leading-none"}`}>{L[i]}</span>
         </div>))}</div>
     </Sec>
   );
@@ -207,25 +235,26 @@ export function Venue() {
 
 export function Guest() {
   const { t } = useLanguage();
+  const e = weddingData.ui.en; // form hamesha English
   const [f, setF] = useState({ name: "", message: "", att: "yes" });
   const [sent, setSent] = useState(false);
   const pay = () => ({ name: f.name, message: f.message, attendance: f.att === "yes" ? "Yes" : "No" });
-  const submit = (e) => { e.preventDefault(); window.open(buildWhatsAppMessageLink(pay()), "_blank", "noopener,noreferrer"); setSent(true); };
+  const submit = (ev) => { ev.preventDefault(); window.open(buildWhatsAppMessageLink(pay()), "_blank", "noopener,noreferrer"); setSent(true); };
   const inp = "w-full rounded-lg border border-[#d4af6a]/40 bg-[#0c2b25]/60 px-4 py-2.5 font-serif text-base text-[#fff8e6] outline-none focus:border-[#d4af6a]";
   return (
     <Sec dark><Head dark label={t.guestLabel} title={t.guestHeading} />
-      <div className="mx-auto max-w-sm rounded-2xl border border-[#d4af6a]/40 bg-white/5 p-6">
+      <div dir="ltr" className="keep-en mx-auto max-w-sm rounded-2xl border border-[#d4af6a]/40 bg-white/5 p-6">
         {sent ? (
-          <div className="py-8 text-center"><p className="text-3xl">❤️</p><p className="font-display text-xl text-[#fff8e6]">{t.sentTitle}</p><p className="font-serif opacity-70">{t.sentSub}</p></div>
+          <div className="py-8 text-center"><p className="text-3xl">❤️</p><p className="font-display text-xl text-[#fff8e6]">{e.sentTitle}</p><p className="font-serif opacity-70">{e.sentSub}</p></div>
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-4">
-            <label className="text-[11px] tracking-[.15em] text-[#d4af6a]">{t.yourName}<input required className={inp + " mt-1"} placeholder={t.namePh} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
-            <label className="text-[11px] tracking-[.15em] text-[#d4af6a]">{t.yourMessage}<textarea required rows={3} className={inp + " mt-1 resize-none"} placeholder={t.messagePh} value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} /></label>
-            <div><p className="mb-1 text-[11px] tracking-[.15em] text-[#d4af6a]">{t.willJoin}</p>
-              <div className="flex gap-2">{[["yes", t.yes], ["no", t.no]].map(([k, l]) => (
+            <label className="text-[11px] tracking-[.15em] text-[#d4af6a]">{e.yourName}<input required className={inp + " mt-1"} placeholder={e.namePh} value={f.name} onChange={(ev) => setF({ ...f, name: ev.target.value })} /></label>
+            <label className="text-[11px] tracking-[.15em] text-[#d4af6a]">{e.yourMessage}<textarea required rows={3} className={inp + " mt-1 resize-none"} placeholder={e.messagePh} value={f.message} onChange={(ev) => setF({ ...f, message: ev.target.value })} /></label>
+            <div><p className="mb-1 text-[11px] tracking-[.15em] text-[#d4af6a]">{e.willJoin}</p>
+              <div className="flex gap-2">{[["yes", e.yes], ["no", e.no]].map(([k, l]) => (
                 <button type="button" key={k} onClick={() => setF({ ...f, att: k })} className={`flex-1 rounded-lg border px-2 py-2 text-xs ${f.att === k ? "border-[#d4af6a] bg-[#d4af6a] text-[#0c2b25]" : "border-[#d4af6a]/40"}`}>{l}</button>))}</div></div>
-            <button className="rounded-full bg-[#d4af6a] py-3 text-xs font-semibold tracking-[.2em] text-[#0c2b25] active:scale-95">{t.send}</button>
-            <button type="button" onClick={() => { window.location.href = buildEmailLink(pay()); setSent(true); }} className="text-[11px] text-[#d4af6a] underline">{t.viaEmail}</button>
+            <button className="rounded-full bg-[#d4af6a] py-3 text-xs font-semibold tracking-[.2em] text-[#0c2b25] active:scale-95">{e.send}</button>
+            <button type="button" onClick={() => { window.location.href = buildEmailLink(pay()); setSent(true); }} className="text-[11px] text-[#d4af6a] underline">{e.viaEmail}</button>
           </form>)}
       </div>
     </Sec>
