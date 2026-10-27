@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@500;600;700&family=Great+Vibes&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Playfair Display", serif;
+  --font-serif: "Cormorant Garamond", serif;
+  --font-script: "Great Vibes", cursive;
+  --font-sans: "Inter", sans-serif;
+}
+
+html { scroll-behavior: smooth; scrollbar-gutter: stable; }
+body { background: #f6efe0; font-family: var(--font-sans); overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+::selection { background: #d4af6a; color: #0c2b25; }
+
+/* Urdu mode */
+html[lang="ur"] body, html[lang="ur"] .font-display, html[lang="ur"] .font-serif,
+html[lang="ur"] .font-script, html[lang="ur"] .font-sans { font-family: "Noto Nastaliq Urdu", serif; }
+html[lang="ur"] * { letter-spacing: 0 !important; text-transform: none !important; }
+html[lang="ur"] :is(h1, h2, h3, p, label, li, a, button) { line-height: 2; }
+html[lang="ur"] .italic { font-style: normal; }
